@@ -20,6 +20,11 @@ public class PrimeraPersona : MonoBehaviour
 
     void Update()
     {
+        if (JuegoManager.Instance != null && !JuegoManager.Instance.PuedeControlarJugador)
+        {
+            return;
+        }
+
         //Mirar con el raton
         float mx = Input.GetAxis("Mouse X") * sensibilidad;
         float my = Input.GetAxis("Mouse Y") * sensibilidad;
