@@ -67,6 +67,7 @@ public class JuegoManager : MonoBehaviour
     private int indiceNivelActual;
     private GameObject metaActual;
     private List<Vector3> puntosNivelDisponibles;
+    private int ultimoIndiceMeta = -1;
     private const float TiempoCaceriaEnemiga = 5f;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -490,16 +491,20 @@ public class JuegoManager : MonoBehaviour
         tiempoInicioNivel = Time.time;
 
         DatosNivel nivel = niveles[indiceNivelActual];
-        metaActual = CrearMeta(puntosNivelDisponibles[0]);
+        int indiceMeta = SeleccionarIndiceMeta(puntosNivelDisponibles);
+        metaActual = CrearMeta(puntosNivelDisponibles[indiceMeta]);
 
-        List<Vector3> puntosEnemigos = SeleccionarPuntosEnCuadrantes(puntosNivelDisponibles, 1, nivel.cantidadEnemigos);
+        List<Vector3> puntosRestantes = new(puntosNivelDisponibles);
+        puntosRestantes.RemoveAt(indiceMeta);
+
+        List<Vector3> puntosEnemigos = SeleccionarPuntosEnCuadrantes(puntosRestantes, 0, nivel.cantidadEnemigos);
         int cantidadEnemigos = puntosEnemigos.Count;
         for (int i = 0; i < cantidadEnemigos; i++)
         {
             CrearEnemigo(puntosEnemigos[i], i + 1, nivel.colorEnemigo);
         }
 
-        List<Vector3> puntosBotiquines = SeleccionarPuntosSeparados(puntosNivelDisponibles, 1 + cantidadEnemigos, 4, 7f);
+        List<Vector3> puntosBotiquines = SeleccionarPuntosSeparados(puntosRestantes, cantidadEnemigos, 4, 7f);
         for (int i = 0; i < puntosBotiquines.Count; i++)
         {
             CrearBotiquin(puntosBotiquines[i], i + 1);
@@ -509,6 +514,24 @@ public class JuegoManager : MonoBehaviour
         ActualizarContadorEnemigos();
         MostrarEstado($"{nivel.nombre}: tienes 5 segundos para atacar primero");
         IniciarCuentaRegresiva();
+    }
+
+    int SeleccionarIndiceMeta(List<Vector3> puntos)
+    {
+        if (puntos.Count <= 1)
+        {
+            ultimoIndiceMeta = 0;
+            return 0;
+        }
+
+        int indice = Random.Range(0, puntos.Count);
+        if (indice == ultimoIndiceMeta)
+        {
+            indice = (indice + 1) % puntos.Count;
+        }
+
+        ultimoIndiceMeta = indice;
+        return indice;
     }
 
     List<Vector3> SeleccionarPuntosSeparados(List<Vector3> puntos, int inicio, int maximo, float distanciaMinima)
@@ -739,32 +762,49 @@ public class JuegoManager : MonoBehaviour
         botiquin.transform.position = posicion + Vector3.up * 0.28f;
         botiquin.transform.localScale = Vector3.one * 0.9f;
 
-        GameObject cuerpo = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        cuerpo.name = "Cuerpo";
-        cuerpo.transform.SetParent(botiquin.transform, false);
-        cuerpo.transform.localPosition = Vector3.zero;
-        cuerpo.transform.localScale = new Vector3(0.9f, 0.45f, 0.45f);
-        Collider cuerpoCollider = cuerpo.GetComponent<Collider>();
-        if (cuerpoCollider != null)
+        Texture2D texturaBotiquin = Resources.Load<Texture2D>("Sprites/botiquin");
+        if (texturaBotiquin == null)
         {
-            Destroy(cuerpoCollider);
+            Destroy(botiquin);
+            Debug.LogWarning("No se pudo cargar la textura Resources/Sprites/botiquin para crear el botiquin.");
+            return;
         }
-        AplicarColor(cuerpo.GetComponent<Renderer>(), new Color(0.96f, 0.96f, 0.96f, 1f));
 
-        GameObject asa = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        asa.name = "Asa";
-        asa.transform.SetParent(botiquin.transform, false);
-        asa.transform.localPosition = new Vector3(0f, 0.3f, 0f);
-        asa.transform.localScale = new Vector3(0.4f, 0.12f, 0.12f);
-        Collider asaCollider = asa.GetComponent<Collider>();
-        if (asaCollider != null)
+        GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        visual.transform.SetParent(botiquin.transform, false);
+        visual.name = "Visual";
+        visual.transform.localPosition = new Vector3(0f, 0.45f, 0f);
+        visual.transform.localRotation = Quaternion.identity;
+        visual.transform.localScale = new Vector3(0.9f, 0.9f, 0.9f);
+
+        Collider visualCollider = visual.GetComponent<Collider>();
+        if (visualCollider != null)
         {
-            Destroy(asaCollider);
+            Destroy(visualCollider);
         }
-        AplicarColor(asa.GetComponent<Renderer>(), new Color(0.8f, 0.8f, 0.8f, 1f));
 
-        CrearCruzBotiquin(botiquin.transform, new Vector3(0f, 0f, 0.24f));
-        CrearCruzBotiquin(botiquin.transform, new Vector3(0f, 0f, -0.24f));
+        Renderer rendererVisual = visual.GetComponent<Renderer>();
+        Shader shader = Shader.Find("Unlit/Transparent");
+        if (shader == null)
+        {
+            shader = Shader.Find("Sprites/Default");
+        }
+        if (shader == null)
+        {
+            shader = Shader.Find("Universal Render Pipeline/Unlit");
+        }
+
+        Material material = new Material(shader);
+        material.mainTexture = texturaBotiquin;
+        if (material.HasProperty("_BaseMap"))
+        {
+            material.SetTexture("_BaseMap", texturaBotiquin);
+        }
+        if (material.HasProperty("_BaseColor"))
+        {
+            material.SetColor("_BaseColor", Color.white);
+        }
+        rendererVisual.material = material;
 
         SphereCollider collider = botiquin.AddComponent<SphereCollider>();
         collider.isTrigger = true;
@@ -776,33 +816,6 @@ public class JuegoManager : MonoBehaviour
 
         botiquines.Add(botiquin);
         botiquin.AddComponent<MedkitPickup>();
-    }
-
-    void CrearCruzBotiquin(Transform padre, Vector3 posicionLocal)
-    {
-        GameObject vertical = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        vertical.name = "CruzVertical";
-        vertical.transform.SetParent(padre, false);
-        vertical.transform.localPosition = posicionLocal;
-        vertical.transform.localScale = new Vector3(0.12f, 0.28f, 0.04f);
-        Collider verticalCollider = vertical.GetComponent<Collider>();
-        if (verticalCollider != null)
-        {
-            Destroy(verticalCollider);
-        }
-        AplicarColor(vertical.GetComponent<Renderer>(), new Color(0.78f, 0.08f, 0.08f, 1f));
-
-        GameObject horizontal = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        horizontal.name = "CruzHorizontal";
-        horizontal.transform.SetParent(padre, false);
-        horizontal.transform.localPosition = posicionLocal;
-        horizontal.transform.localScale = new Vector3(0.28f, 0.12f, 0.04f);
-        Collider horizontalCollider = horizontal.GetComponent<Collider>();
-        if (horizontalCollider != null)
-        {
-            Destroy(horizontalCollider);
-        }
-        AplicarColor(horizontal.GetComponent<Renderer>(), new Color(0.78f, 0.08f, 0.08f, 1f));
     }
 
     void AplicarColor(Renderer renderer, Color color)
@@ -1237,6 +1250,19 @@ public class JuegoManager : MonoBehaviour
         CambiarCursor(true);
         MostrarPanel("Game Over", "Reintentar");
         MostrarEstado("Has caido", 0f);
+
+        if (botonSecundario != null)
+        {
+            botonSecundario.gameObject.SetActive(true);
+            botonSecundario.onClick.RemoveAllListeners();
+            botonSecundario.onClick.AddListener(SalirDelJuego);
+
+            Text textoSecundario = botonSecundario.GetComponentInChildren<Text>();
+            if (textoSecundario != null)
+            {
+                textoSecundario.text = "Salir";
+            }
+        }
     }
 
     public void IntentarCompletarNivel()

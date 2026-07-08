@@ -26,6 +26,17 @@ public class MedkitPickup : MonoBehaviour
         Vector3 posicion = posicionBase;
         posicion.y += Mathf.Sin(Time.time * 2.5f + tiempoBase) * 0.08f;
         transform.position = posicion;
+
+        Transform visual = transform.Find("Visual");
+        if (visual != null && Camera.main != null)
+        {
+            Vector3 direccion = Camera.main.transform.position - visual.position;
+            direccion.y = 0f;
+            if (direccion.sqrMagnitude > 0.001f)
+            {
+                visual.rotation = Quaternion.LookRotation(-direccion.normalized, Vector3.up);
+            }
+        }
     }
 
     void OnTriggerEnter(Collider other)
