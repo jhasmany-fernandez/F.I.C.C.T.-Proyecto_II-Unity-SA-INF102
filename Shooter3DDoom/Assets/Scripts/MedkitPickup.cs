@@ -1,32 +1,42 @@
 using UnityEngine;
 
+// Maneja el comportamiento de recoger un botiquin, curar y reproducir sonido.
 public class MedkitPickup : MonoBehaviour
 {
+    // Cantidad de vida que devuelve cada botiquin.
     public int curacion = 1;
 
+    // Se comparte entre todos los botiquines para no recrear el audio cada vez.
     private static AudioClip clipPickup;
+    // Desfase aleatorio para que cada botiquin flote distinto.
     private float tiempoBase;
+    // Posicion base usada para el efecto de flotacion.
     private Vector3 posicionBase;
 
     void Awake()
     {
+        // Crea una sola vez el sonido sintetico del pickup.
         if (clipPickup == null)
         {
             clipPickup = CrearSonidoPickup();
         }
 
+        // Guarda una fase distinta para evitar animaciones sincronizadas.
         tiempoBase = Random.Range(0f, Mathf.PI * 2f);
         posicionBase = transform.position;
     }
 
     void Update()
     {
+        // Gira lentamente el botiquin para hacerlo mas visible.
         transform.Rotate(0f, 35f * Time.deltaTime, 0f, Space.World);
 
+        // Aplica una oscilacion vertical suave.
         Vector3 posicion = posicionBase;
         posicion.y += Mathf.Sin(Time.time * 2.5f + tiempoBase) * 0.08f;
         transform.position = posicion;
 
+        // Hace que la imagen siempre mire hacia la camara principal.
         Transform visual = transform.Find("Visual");
         if (visual != null && Camera.main != null)
         {
@@ -41,23 +51,27 @@ public class MedkitPickup : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
+        // Solo el jugador puede recoger el botiquin.
         if (!other.CompareTag("Player"))
         {
             return;
         }
 
+        // Busca el componente de vida del jugador que entro al trigger.
         Vida vida = other.GetComponent<Vida>();
         if (vida == null)
         {
             return;
         }
 
+        // Si la vida ya esta llena, no consume el botiquin.
         int recuperado = vida.Curar(curacion);
         if (recuperado <= 0)
         {
             return;
         }
 
+        // Reproduce el sonido en la posicion del pickup antes de destruirlo.
         if (clipPickup != null)
         {
             AudioSource.PlayClipAtPoint(clipPickup, transform.position, 0.75f);
@@ -69,11 +83,13 @@ public class MedkitPickup : MonoBehaviour
 
     static AudioClip CrearSonidoPickup()
     {
+        // Genera un sonido corto por codigo para no depender de un archivo externo.
         const int sampleRate = 44100;
         const float duracion = 0.18f;
         int samples = Mathf.CeilToInt(sampleRate * duracion);
         float[] data = new float[samples];
 
+        // Mezcla dos senoidales con una envolvente decreciente para simular un pickup.
         for (int i = 0; i < samples; i++)
         {
             float t = i / (float)sampleRate;
@@ -83,6 +99,7 @@ public class MedkitPickup : MonoBehaviour
             data[i] = wave * envelope * 0.25f;
         }
 
+        // Crea el AudioClip final y copia los samples sintetizados.
         AudioClip clip = AudioClip.Create("PickupMedkit", samples, 1, sampleRate, false);
         clip.SetData(data, 0);
         return clip;
