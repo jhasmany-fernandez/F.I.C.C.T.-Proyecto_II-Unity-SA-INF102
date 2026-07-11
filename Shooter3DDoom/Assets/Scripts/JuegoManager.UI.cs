@@ -7,27 +7,34 @@ public partial class JuegoManager
 {
     void ConfigurarUI()
     {
-        // Recupera el canvas de la escena y construye el HUD por codigo.
-        canvas = FindAnyObjectByType<Canvas>();
-        if (canvas == null)
+        try
         {
-            return;
+            // Recupera el canvas de la escena y construye el HUD por codigo.
+            canvas = FindAnyObjectByType<Canvas>();
+            if (canvas == null)
+            {
+                return;
+            }
+
+            textoMunicion = CrearTextoUI("AmmoText", new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-170f, -35f), 28, TextAnchor.UpperRight);
+            textoEnemigos = CrearTextoUI("EnemyText", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(190f, -35f), 28, TextAnchor.UpperLeft);
+            textoVida = CrearTextoUI("LifeText", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(190f, -70f), 26, TextAnchor.UpperLeft);
+            textoArma = CrearTextoUI("WeaponText", new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-170f, -70f), 26, TextAnchor.UpperRight);
+            textoEstado = CrearTextoUI("StatusText", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -40f), 28, TextAnchor.UpperCenter);
+            textoCuentaRegresiva = CrearTextoUI("CountdownText", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -80f), 30, TextAnchor.UpperCenter);
+            textoMira = CrearMira();
+            textoEstado.color = new Color(1f, 0.95f, 0.8f, 1f);
+            textoCuentaRegresiva.color = new Color(1f, 0.82f, 0.35f, 1f);
+            AjustarArmaUI();
+
+            overlayDano = CrearOverlayDano();
+            panelFinal = CrearPanelFinal();
+            panelFinal.SetActive(false);
         }
-
-        textoMunicion = CrearTextoUI("AmmoText", new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-170f, -35f), 28, TextAnchor.UpperRight);
-        textoEnemigos = CrearTextoUI("EnemyText", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(190f, -35f), 28, TextAnchor.UpperLeft);
-        textoVida = CrearTextoUI("LifeText", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(190f, -70f), 26, TextAnchor.UpperLeft);
-        textoArma = CrearTextoUI("WeaponText", new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-170f, -70f), 26, TextAnchor.UpperRight);
-        textoEstado = CrearTextoUI("StatusText", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -40f), 28, TextAnchor.UpperCenter);
-        textoCuentaRegresiva = CrearTextoUI("CountdownText", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -80f), 30, TextAnchor.UpperCenter);
-        textoMira = CrearMira();
-        textoEstado.color = new Color(1f, 0.95f, 0.8f, 1f);
-        textoCuentaRegresiva.color = new Color(1f, 0.82f, 0.35f, 1f);
-        AjustarArmaUI();
-
-        overlayDano = CrearOverlayDano();
-        panelFinal = CrearPanelFinal();
-        panelFinal.SetActive(false);
+        catch (System.Exception ex)
+        {
+            RegistrarError(nameof(ConfigurarUI), ex);
+        }
     }
 
     void DetenerRutinasVisuales()
@@ -482,23 +489,30 @@ public partial class JuegoManager
 
     public void MostrarEstado(string mensaje, float duracion = 0f)
     {
-        // Escribe mensajes temporales o persistentes en la barra de estado.
-        if (textoEstado == null)
+        try
         {
-            return;
+            // Escribe mensajes temporales o persistentes en la barra de estado.
+            if (textoEstado == null)
+            {
+                return;
+            }
+
+            textoEstado.text = mensaje;
+
+            if (rutinaEstado != null)
+            {
+                StopCoroutine(rutinaEstado);
+                rutinaEstado = null;
+            }
+
+            if (duracion > 0f)
+            {
+                rutinaEstado = StartCoroutine(LimpiarEstado(duracion));
+            }
         }
-
-        textoEstado.text = mensaje;
-
-        if (rutinaEstado != null)
+        catch (System.Exception ex)
         {
-            StopCoroutine(rutinaEstado);
-            rutinaEstado = null;
-        }
-
-        if (duracion > 0f)
-        {
-            rutinaEstado = StartCoroutine(LimpiarEstado(duracion));
+            RegistrarError(nameof(MostrarEstado), ex);
         }
     }
 

@@ -14,29 +14,36 @@ public partial class JuegoManager
 
     public void JugadorMurio()
     {
-        // Activa la pantalla de derrota cuando la vida del jugador llega a cero.
-        if (estado != EstadoJuego.Jugando)
+        try
         {
-            return;
-        }
-
-        estado = EstadoJuego.GameOver;
-        Time.timeScale = 0f;
-        CambiarCursor(true);
-        MostrarPanel("Game Over", "Reintentar");
-        MostrarEstado("Has caido", 0f);
-
-        if (botonSecundario != null)
-        {
-            botonSecundario.gameObject.SetActive(true);
-            botonSecundario.onClick.RemoveAllListeners();
-            botonSecundario.onClick.AddListener(SalirDelJuego);
-
-            Text textoSecundario = botonSecundario.GetComponentInChildren<Text>();
-            if (textoSecundario != null)
+            // Activa la pantalla de derrota cuando la vida del jugador llega a cero.
+            if (estado != EstadoJuego.Jugando)
             {
-                textoSecundario.text = "Salir";
+                return;
             }
+
+            estado = EstadoJuego.GameOver;
+            Time.timeScale = 0f;
+            CambiarCursor(true);
+            MostrarPanel("Game Over", "Reintentar");
+            MostrarEstado("Has caido", 0f);
+
+            if (botonSecundario != null)
+            {
+                botonSecundario.gameObject.SetActive(true);
+                botonSecundario.onClick.RemoveAllListeners();
+                botonSecundario.onClick.AddListener(SalirDelJuego);
+
+                Text textoSecundario = botonSecundario.GetComponentInChildren<Text>();
+                if (textoSecundario != null)
+                {
+                    textoSecundario.text = "Salir";
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            RegistrarError(nameof(JugadorMurio), ex);
         }
     }
 

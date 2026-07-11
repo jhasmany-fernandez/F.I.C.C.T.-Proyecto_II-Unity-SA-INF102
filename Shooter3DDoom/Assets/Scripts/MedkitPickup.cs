@@ -13,72 +13,98 @@ public class MedkitPickup : MonoBehaviour
     // Posicion base usada para el efecto de flotacion.
     private Vector3 posicionBase;
 
+    void RegistrarError(string contexto, System.Exception ex)
+    {
+        Debug.LogError($"[MedkitPickup] Error en {contexto}: {ex.Message}\n{ex}", this);
+    }
+
     void Awake()
     {
-        // Crea una sola vez el sonido sintetico del pickup.
-        if (clipPickup == null)
+        try
         {
-            clipPickup = CrearSonidoPickup();
-        }
+            // Crea una sola vez el sonido sintetico del pickup.
+            if (clipPickup == null)
+            {
+                clipPickup = CrearSonidoPickup();
+            }
 
-        // Guarda una fase distinta para evitar animaciones sincronizadas.
-        tiempoBase = Random.Range(0f, Mathf.PI * 2f);
-        posicionBase = transform.position;
+            // Guarda una fase distinta para evitar animaciones sincronizadas.
+            tiempoBase = Random.Range(0f, Mathf.PI * 2f);
+            posicionBase = transform.position;
+        }
+        catch (System.Exception ex)
+        {
+            RegistrarError(nameof(Awake), ex);
+        }
     }
 
     void Update()
     {
-        // Gira lentamente el botiquin para hacerlo mas visible.
-        transform.Rotate(0f, 35f * Time.deltaTime, 0f, Space.World);
-
-        // Aplica una oscilacion vertical suave.
-        Vector3 posicion = posicionBase;
-        posicion.y += Mathf.Sin(Time.time * 2.5f + tiempoBase) * 0.08f;
-        transform.position = posicion;
-
-        // Hace que la imagen siempre mire hacia la camara principal.
-        Transform visual = transform.Find("Visual");
-        if (visual != null && Camera.main != null)
+        try
         {
-            Vector3 direccion = Camera.main.transform.position - visual.position;
-            direccion.y = 0f;
-            if (direccion.sqrMagnitude > 0.001f)
+            // Gira lentamente el botiquin para hacerlo mas visible.
+            transform.Rotate(0f, 35f * Time.deltaTime, 0f, Space.World);
+
+            // Aplica una oscilacion vertical suave.
+            Vector3 posicion = posicionBase;
+            posicion.y += Mathf.Sin(Time.time * 2.5f + tiempoBase) * 0.08f;
+            transform.position = posicion;
+
+            // Hace que la imagen siempre mire hacia la camara principal.
+            Transform visual = transform.Find("Visual");
+            if (visual != null && Camera.main != null)
             {
-                visual.rotation = Quaternion.LookRotation(-direccion.normalized, Vector3.up);
+                Vector3 direccion = Camera.main.transform.position - visual.position;
+                direccion.y = 0f;
+                if (direccion.sqrMagnitude > 0.001f)
+                {
+                    visual.rotation = Quaternion.LookRotation(-direccion.normalized, Vector3.up);
+                }
             }
+        }
+        catch (System.Exception ex)
+        {
+            RegistrarError(nameof(Update), ex);
         }
     }
 
     void OnTriggerEnter(Collider other)
     {
-        // Solo el jugador puede recoger el botiquin.
-        if (!other.CompareTag("Player"))
+        try
         {
-            return;
-        }
+            // Solo el jugador puede recoger el botiquin.
+            if (!other.CompareTag("Player"))
+            {
+                return;
+            }
 
-        // Busca el componente de vida del jugador que entro al trigger.
-        Vida vida = other.GetComponent<Vida>();
-        if (vida == null)
+            // Busca el componente de vida del jugador que entro al trigger.
+            Vida vida = other.GetComponent<Vida>();
+            if (vida == null)
+            {
+                return;
+            }
+
+            // Si la vida ya esta llena, no consume el botiquin.
+            int recuperado = vida.Curar(curacion);
+            if (recuperado <= 0)
+            {
+                return;
+            }
+
+            // Reproduce el sonido en la posicion del pickup antes de destruirlo.
+            if (clipPickup != null)
+            {
+                AudioSource.PlayClipAtPoint(clipPickup, transform.position, 0.75f);
+            }
+
+            JuegoManager.Instance?.MostrarEstado($"+{recuperado} vida", 1.2f);
+            Destroy(gameObject);
+        }
+        catch (System.Exception ex)
         {
-            return;
+            RegistrarError(nameof(OnTriggerEnter), ex);
         }
-
-        // Si la vida ya esta llena, no consume el botiquin.
-        int recuperado = vida.Curar(curacion);
-        if (recuperado <= 0)
-        {
-            return;
-        }
-
-        // Reproduce el sonido en la posicion del pickup antes de destruirlo.
-        if (clipPickup != null)
-        {
-            AudioSource.PlayClipAtPoint(clipPickup, transform.position, 0.75f);
-        }
-
-        JuegoManager.Instance?.MostrarEstado($"+{recuperado} vida", 1.2f);
-        Destroy(gameObject);
     }
 
     static AudioClip CrearSonidoPickup()

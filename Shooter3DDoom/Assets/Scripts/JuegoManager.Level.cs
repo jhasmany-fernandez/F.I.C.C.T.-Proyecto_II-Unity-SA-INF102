@@ -8,96 +8,110 @@ public partial class JuegoManager
 {
     void ConfigurarNavMesh()
     {
-        // Busca el piso principal y le asegura una superficie navegable para la IA.
-        GameObject piso = GameObject.Find("Piso");
-        if (piso == null)
+        try
         {
-            return;
-        }
+            // Busca el piso principal y le asegura una superficie navegable para la IA.
+            GameObject piso = GameObject.Find("Piso");
+            if (piso == null)
+            {
+                return;
+            }
 
-        NavMeshSurface surface = piso.GetComponent<NavMeshSurface>();
-        if (surface == null)
+            NavMeshSurface surface = piso.GetComponent<NavMeshSurface>();
+            if (surface == null)
+            {
+                surface = piso.AddComponent<NavMeshSurface>();
+            }
+
+            surface.collectObjects = CollectObjects.All;
+            surface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
+            surface.layerMask = ~0;
+            // Se reconstruye al cargar la escena para que la IA use el mapa actual.
+            surface.BuildNavMesh();
+        }
+        catch (System.Exception ex)
         {
-            surface = piso.AddComponent<NavMeshSurface>();
+            RegistrarError(nameof(ConfigurarNavMesh), ex);
         }
-
-        surface.collectObjects = CollectObjects.All;
-        surface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
-        surface.layerMask = ~0;
-        // Se reconstruye al cargar la escena para que la IA use el mapa actual.
-        surface.BuildNavMesh();
     }
 
     void PrepararNivelActual(bool reiniciarPosicionJugador)
     {
-        // Genera desde cero el contenido del nivel actual.
-        if (jugador == null || vidaJugador == null)
+        try
         {
-            return;
-        }
-
-        // Limpia la poblacion del nivel anterior antes de generar la nueva ronda.
-        if (metaActual != null)
-        {
-            Destroy(metaActual);
-        }
-
-        foreach (EnemyAI enemigo in enemigos)
-        {
-            if (enemigo != null)
+            // Genera desde cero el contenido del nivel actual.
+            if (jugador == null || vidaJugador == null)
             {
-                Destroy(enemigo.gameObject);
+                return;
             }
-        }
-        enemigos.Clear();
 
-        foreach (GameObject botiquin in botiquines)
-        {
-            if (botiquin != null)
+            // Limpia la poblacion del nivel anterior antes de generar la nueva ronda.
+            if (metaActual != null)
             {
-                Destroy(botiquin);
+                Destroy(metaActual);
             }
-        }
-        botiquines.Clear();
 
-        puntosNivelDisponibles = ObtenerPuntosNavMesh();
-        if (puntosNivelDisponibles.Count == 0)
+            foreach (EnemyAI enemigo in enemigos)
+            {
+                if (enemigo != null)
+                {
+                    Destroy(enemigo.gameObject);
+                }
+            }
+            enemigos.Clear();
+
+            foreach (GameObject botiquin in botiquines)
+            {
+                if (botiquin != null)
+                {
+                    Destroy(botiquin);
+                }
+            }
+            botiquines.Clear();
+
+            puntosNivelDisponibles = ObtenerPuntosNavMesh();
+            if (puntosNivelDisponibles.Count == 0)
+            {
+                return;
+            }
+
+            if (reiniciarPosicionJugador)
+            {
+                jugador.position = Vector3.up;
+            }
+
+            tiempoInicioNivel = Time.time;
+
+            DatosNivel nivel = niveles[indiceNivelActual];
+            int indiceMeta = SeleccionarIndiceMeta(puntosNivelDisponibles);
+            metaActual = CrearMeta(puntosNivelDisponibles[indiceMeta]);
+
+            // Reserva la posicion de la meta para que no se superponga con enemigos ni botiquines.
+            List<Vector3> puntosRestantes = new(puntosNivelDisponibles);
+            puntosRestantes.RemoveAt(indiceMeta);
+
+            List<Vector3> puntosEnemigos = SeleccionarPuntosEnCuadrantes(puntosRestantes, 0, nivel.cantidadEnemigos);
+            int cantidadEnemigos = puntosEnemigos.Count;
+            for (int i = 0; i < cantidadEnemigos; i++)
+            {
+                CrearEnemigo(puntosEnemigos[i], i + 1, nivel.colorEnemigo);
+            }
+
+            List<Vector3> puntosBotiquines = SeleccionarPuntosSeparados(puntosRestantes, cantidadEnemigos, 4, 7f);
+            for (int i = 0; i < puntosBotiquines.Count; i++)
+            {
+                CrearBotiquin(puntosBotiquines[i], i + 1);
+            }
+
+            ActualizarNivel();
+            ActualizarContadorEnemigos();
+            MostrarEstado($"{nivel.nombre}: tienes 5 segundos para atacar primero");
+            IniciarCuentaRegresiva();
+        }
+        catch (System.Exception ex)
         {
-            return;
+            RegistrarError(nameof(PrepararNivelActual), ex);
         }
-
-        if (reiniciarPosicionJugador)
-        {
-            jugador.position = Vector3.up;
-        }
-
-        tiempoInicioNivel = Time.time;
-
-        DatosNivel nivel = niveles[indiceNivelActual];
-        int indiceMeta = SeleccionarIndiceMeta(puntosNivelDisponibles);
-        metaActual = CrearMeta(puntosNivelDisponibles[indiceMeta]);
-
-        // Reserva la posicion de la meta para que no se superponga con enemigos ni botiquines.
-        List<Vector3> puntosRestantes = new(puntosNivelDisponibles);
-        puntosRestantes.RemoveAt(indiceMeta);
-
-        List<Vector3> puntosEnemigos = SeleccionarPuntosEnCuadrantes(puntosRestantes, 0, nivel.cantidadEnemigos);
-        int cantidadEnemigos = puntosEnemigos.Count;
-        for (int i = 0; i < cantidadEnemigos; i++)
-        {
-            CrearEnemigo(puntosEnemigos[i], i + 1, nivel.colorEnemigo);
-        }
-
-        List<Vector3> puntosBotiquines = SeleccionarPuntosSeparados(puntosRestantes, cantidadEnemigos, 4, 7f);
-        for (int i = 0; i < puntosBotiquines.Count; i++)
-        {
-            CrearBotiquin(puntosBotiquines[i], i + 1);
-        }
-
-        ActualizarNivel();
-        ActualizarContadorEnemigos();
-        MostrarEstado($"{nivel.nombre}: tienes 5 segundos para atacar primero");
-        IniciarCuentaRegresiva();
     }
 
     int SeleccionarIndiceMeta(List<Vector3> puntos)
@@ -344,6 +358,40 @@ public partial class JuegoManager
         fuente.playOnAwake = false;
         fuente.spatialBlend = 1f;
 
+        // Crea un arma frontal visible que sobresalga del cuerpo del enemigo.
+        GameObject arma = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        arma.name = "ArmaEnemigo";
+        arma.transform.SetParent(enemigo.transform, false);
+        arma.transform.localPosition = new Vector3(0.42f, 0.18f, 0.82f);
+        arma.transform.localRotation = Quaternion.Euler(-8f, 18f, -24f);
+        arma.transform.localScale = new Vector3(0.24f, 0.16f, 0.8f);
+        AplicarColor(arma.GetComponent<Renderer>(), new Color(0.08f, 0.08f, 0.08f, 1f));
+
+        Collider colliderArma = arma.GetComponent<Collider>();
+        if (colliderArma != null)
+        {
+            Destroy(colliderArma);
+        }
+
+        // Punta luminosa para que se note claramente donde esta el arma.
+        GameObject boquilla = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        boquilla.name = "BoquillaArma";
+        boquilla.transform.SetParent(arma.transform, false);
+        boquilla.transform.localPosition = new Vector3(0f, 0f, 0.52f);
+        boquilla.transform.localScale = new Vector3(0.22f, 0.22f, 0.22f);
+        AplicarColor(boquilla.GetComponent<Renderer>(), new Color(1f, 0.35f, 0.1f, 1f));
+
+        Collider colliderBoquilla = boquilla.GetComponent<Collider>();
+        if (colliderBoquilla != null)
+        {
+            Destroy(colliderBoquilla);
+        }
+
+        // Punto exacto desde donde nace el rayo del enemigo.
+        GameObject puntoDisparo = new GameObject("PuntoDisparo");
+        puntoDisparo.transform.SetParent(arma.transform, false);
+        puntoDisparo.transform.localPosition = new Vector3(0f, 0f, 0.56f);
+
         Vida vida = enemigo.AddComponent<Vida>();
         vida.vidaMax = 2;
         vida.alMorir += OnEnemyDeath;
@@ -356,66 +404,73 @@ public partial class JuegoManager
 
     void CrearBotiquin(Vector3 posicion, int indice)
     {
-        // Crea un botiquin visual usando la textura exigida por el enunciado.
-        GameObject botiquin = new GameObject($"Botiquin {indice}");
-        botiquin.transform.position = posicion + Vector3.up * 0.28f;
-        botiquin.transform.localScale = Vector3.one * 0.9f;
-
-        // El botiquin obligatorio se representa con la textura pedida en el enunciado.
-        Texture2D texturaBotiquin = Resources.Load<Texture2D>("Sprites/botiquin");
-        if (texturaBotiquin == null)
+        try
         {
-            Destroy(botiquin);
-            Debug.LogWarning("No se pudo cargar la textura Resources/Sprites/botiquin para crear el botiquin.");
-            return;
+            // Crea un botiquin visual usando la textura exigida por el enunciado.
+            GameObject botiquin = new GameObject($"Botiquin {indice}");
+            botiquin.transform.position = posicion + Vector3.up * 0.28f;
+            botiquin.transform.localScale = Vector3.one * 0.9f;
+
+            // El botiquin obligatorio se representa con la textura pedida en el enunciado.
+            Texture2D texturaBotiquin = Resources.Load<Texture2D>("Sprites/botiquin");
+            if (texturaBotiquin == null)
+            {
+                Destroy(botiquin);
+                Debug.LogWarning("No se pudo cargar la textura Resources/Sprites/botiquin para crear el botiquin.");
+                return;
+            }
+
+            GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            visual.transform.SetParent(botiquin.transform, false);
+            visual.name = "Visual";
+            visual.transform.localPosition = new Vector3(0f, 0.45f, 0f);
+            visual.transform.localRotation = Quaternion.identity;
+            visual.transform.localScale = new Vector3(0.9f, 0.9f, 0.9f);
+
+            Collider visualCollider = visual.GetComponent<Collider>();
+            if (visualCollider != null)
+            {
+                Destroy(visualCollider);
+            }
+
+            Renderer rendererVisual = visual.GetComponent<Renderer>();
+            Shader shader = Shader.Find("Unlit/Transparent");
+            if (shader == null)
+            {
+                shader = Shader.Find("Sprites/Default");
+            }
+            if (shader == null)
+            {
+                shader = Shader.Find("Universal Render Pipeline/Unlit");
+            }
+
+            Material material = new Material(shader);
+            material.mainTexture = texturaBotiquin;
+            if (material.HasProperty("_BaseMap"))
+            {
+                material.SetTexture("_BaseMap", texturaBotiquin);
+            }
+            if (material.HasProperty("_BaseColor"))
+            {
+                material.SetColor("_BaseColor", Color.white);
+            }
+            rendererVisual.material = material;
+
+            SphereCollider collider = botiquin.AddComponent<SphereCollider>();
+            collider.isTrigger = true;
+            collider.radius = 0.65f;
+
+            Rigidbody rb = botiquin.AddComponent<Rigidbody>();
+            rb.isKinematic = true;
+            rb.useGravity = false;
+
+            botiquines.Add(botiquin);
+            botiquin.AddComponent<MedkitPickup>();
         }
-
-        GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Quad);
-        visual.transform.SetParent(botiquin.transform, false);
-        visual.name = "Visual";
-        visual.transform.localPosition = new Vector3(0f, 0.45f, 0f);
-        visual.transform.localRotation = Quaternion.identity;
-        visual.transform.localScale = new Vector3(0.9f, 0.9f, 0.9f);
-
-        Collider visualCollider = visual.GetComponent<Collider>();
-        if (visualCollider != null)
+        catch (System.Exception ex)
         {
-            Destroy(visualCollider);
+            RegistrarError(nameof(CrearBotiquin), ex);
         }
-
-        Renderer rendererVisual = visual.GetComponent<Renderer>();
-        Shader shader = Shader.Find("Unlit/Transparent");
-        if (shader == null)
-        {
-            shader = Shader.Find("Sprites/Default");
-        }
-        if (shader == null)
-        {
-            shader = Shader.Find("Universal Render Pipeline/Unlit");
-        }
-
-        Material material = new Material(shader);
-        material.mainTexture = texturaBotiquin;
-        if (material.HasProperty("_BaseMap"))
-        {
-            material.SetTexture("_BaseMap", texturaBotiquin);
-        }
-        if (material.HasProperty("_BaseColor"))
-        {
-            material.SetColor("_BaseColor", Color.white);
-        }
-        rendererVisual.material = material;
-
-        SphereCollider collider = botiquin.AddComponent<SphereCollider>();
-        collider.isTrigger = true;
-        collider.radius = 0.65f;
-
-        Rigidbody rb = botiquin.AddComponent<Rigidbody>();
-        rb.isKinematic = true;
-        rb.useGravity = false;
-
-        botiquines.Add(botiquin);
-        botiquin.AddComponent<MedkitPickup>();
     }
 
     void AplicarColor(Renderer renderer, Color color)

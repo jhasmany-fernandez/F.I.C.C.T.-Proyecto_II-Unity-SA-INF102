@@ -83,18 +83,30 @@ public partial class JuegoManager : MonoBehaviour
     // Tiempo de ventaja inicial para que el jugador ataque antes de que reaccionen los enemigos.
     private const float TiempoCaceriaEnemiga = 5f;
 
+    void RegistrarError(string contexto, System.Exception ex)
+    {
+        Debug.LogError($"[JuegoManager] Error en {contexto}: {ex.Message}\n{ex}", this);
+    }
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void CrearInstancia()
     {
-        // Mantiene un unico gestor global aunque la escena se recargue.
-        if (Instance != null)
+        try
         {
-            return;
-        }
+            // Mantiene un unico gestor global aunque la escena se recargue.
+            if (Instance != null)
+            {
+                return;
+            }
 
-        GameObject go = new GameObject("JuegoManager");
-        DontDestroyOnLoad(go);
-        go.AddComponent<JuegoManager>();
+            GameObject go = new GameObject("JuegoManager");
+            DontDestroyOnLoad(go);
+            go.AddComponent<JuegoManager>();
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"[JuegoManager] Error en {nameof(CrearInstancia)}: {ex.Message}\n{ex}");
+        }
     }
 
     void Awake()
@@ -124,50 +136,64 @@ public partial class JuegoManager : MonoBehaviour
 
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        // Al cargar escena reinicia efectos visuales y reconfigura todo de forma diferida.
-        DetenerRutinasVisuales();
-        LimpiarReferenciasUI();
-        StartCoroutine(ConfigurarEscena());
+        try
+        {
+            // Al cargar escena reinicia efectos visuales y reconfigura todo de forma diferida.
+            DetenerRutinasVisuales();
+            LimpiarReferenciasUI();
+            StartCoroutine(ConfigurarEscena());
+        }
+        catch (System.Exception ex)
+        {
+            RegistrarError(nameof(OnSceneLoaded), ex);
+        }
     }
 
     IEnumerator ConfigurarEscena()
     {
-        yield return null;
-
-        // Reinicia el estado del juego y vuelve a enlazar referencias de la escena.
-        estado = EstadoJuego.Jugando;
-        enemigos.Clear();
-        botiquines.Clear();
-        Time.timeScale = 1f;
-        tiempoInicioNivel = Time.time;
-        enemigosEliminadosAcumulados = 0;
-        indiceNivelActual = 0;
-
-        jugador = GameObject.FindWithTag("Player")?.transform;
-        vidaJugador = jugador != null ? jugador.GetComponent<Vida>() : null;
-
-        Disparar dispararJugador = jugador != null ? jugador.GetComponent<Disparar>() : null;
-        clipDisparoJugador = dispararJugador != null ? dispararJugador.sonidoDisparo : null;
-
-        ConfigurarNavMesh();
-        ConfigurarUI();
-        PrepararNivelActual(true);
-
-        if (vidaJugador != null)
+        try
         {
-            ActualizarVida(vidaJugador.VidaActual, vidaJugador.VidaMaxima);
-        }
+            yield return null;
 
-        if (dispararJugador != null)
+            // Reinicia el estado del juego y vuelve a enlazar referencias de la escena.
+            estado = EstadoJuego.Jugando;
+            enemigos.Clear();
+            botiquines.Clear();
+            Time.timeScale = 1f;
+            tiempoInicioNivel = Time.time;
+            enemigosEliminadosAcumulados = 0;
+            indiceNivelActual = 0;
+
+            jugador = GameObject.FindWithTag("Player")?.transform;
+            vidaJugador = jugador != null ? jugador.GetComponent<Vida>() : null;
+
+            Disparar dispararJugador = jugador != null ? jugador.GetComponent<Disparar>() : null;
+            clipDisparoJugador = dispararJugador != null ? dispararJugador.sonidoDisparo : null;
+
+            ConfigurarNavMesh();
+            ConfigurarUI();
+            PrepararNivelActual(true);
+
+            if (vidaJugador != null)
+            {
+                ActualizarVida(vidaJugador.VidaActual, vidaJugador.VidaMaxima);
+            }
+
+            if (dispararJugador != null)
+            {
+                ActualizarMunicion(dispararJugador.BalasActuales, dispararJugador.BalasPorCargador, dispararJugador.EstaRecargando);
+            }
+
+            MostrarEstado("Tienes 5 segundos para cazarlos primero");
+            IniciarCuentaRegresiva();
+            CambiarCursor(false);
+            salirJuegoPendiente = false;
+            pausaActiva = false;
+        }
+        catch (System.Exception ex)
         {
-            ActualizarMunicion(dispararJugador.BalasActuales, dispararJugador.BalasPorCargador, dispararJugador.EstaRecargando);
+            RegistrarError(nameof(ConfigurarEscena), ex);
         }
-
-        MostrarEstado("Tienes 5 segundos para cazarlos primero");
-        IniciarCuentaRegresiva();
-        CambiarCursor(false);
-        salirJuegoPendiente = false;
-        pausaActiva = false;
     }
 
     void Update()

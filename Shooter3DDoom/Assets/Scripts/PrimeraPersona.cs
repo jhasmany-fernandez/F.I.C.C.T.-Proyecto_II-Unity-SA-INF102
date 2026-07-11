@@ -19,40 +19,64 @@ public class PrimeraPersona : MonoBehaviour
     // Velocidad acumulada del eje Y para aplicar gravedad.
     private Vector3 velY;
 
+    void RegistrarError(string contexto, System.Exception ex)
+    {
+        Debug.LogError($"[PrimeraPersona] Error en {contexto}: {ex.Message}\n{ex}", this);
+    }
+
     void Start()
     {
-        // Obtiene el componente requerido para mover al jugador.
-        cc = GetComponent<CharacterController>();
-        // Al iniciar, oculta y bloquea el cursor para modo FPS.
-        Cursor.lockState = CursorLockMode.Locked;
+        try
+        {
+            // Obtiene el componente requerido para mover al jugador.
+            cc = GetComponent<CharacterController>();
+            // Al iniciar, oculta y bloquea el cursor para modo FPS.
+            Cursor.lockState = CursorLockMode.Locked;
+        }
+        catch (System.Exception ex)
+        {
+            RegistrarError(nameof(Start), ex);
+        }
     }
 
     void Update()
     {
-        // Si el juego esta pausado o terminado, el jugador no puede moverse.
-        if (JuegoManager.Instance != null && !JuegoManager.Instance.PuedeControlarJugador)
+        try
         {
-            return;
+            // Si el juego esta pausado o terminado, el jugador no puede moverse.
+            if (JuegoManager.Instance != null && !JuegoManager.Instance.PuedeControlarJugador)
+            {
+                return;
+            }
+
+            if (cc == null || camara == null)
+            {
+                return;
+            }
+
+            // Lee el movimiento del mouse y lo transforma en rotacion horizontal y vertical.
+            float mx = Input.GetAxis("Mouse X") * sensibilidad;
+            float my = Input.GetAxis("Mouse Y") * sensibilidad;
+            transform.Rotate(0, mx, 0);
+            pitch = Mathf.Clamp(pitch - my, -80f, 80f);
+            camara.localEulerAngles = new Vector3(pitch, 0, 0);
+
+            // Convierte las teclas de movimiento en un vector local relativo al jugador.
+            float h = Input.GetAxisRaw("Horizontal");
+            float v = Input.GetAxisRaw("Vertical");
+            Vector3 mov = (transform.right * h + transform.forward * v).normalized * velocidad;
+
+            // Si esta en el suelo, mantiene una pequena fuerza hacia abajo para estabilidad.
+            if (cc.isGrounded && velY.y < 0) velY.y = -2f;
+            // Acumula gravedad para caidas y saltos futuros si se quisieran agregar.
+            velY.y += gravedad * Time.deltaTime;
+
+            // Aplica el movimiento horizontal y vertical en una sola llamada.
+            cc.Move((mov + velY) * Time.deltaTime);
         }
-
-        // Lee el movimiento del mouse y lo transforma en rotacion horizontal y vertical.
-        float mx = Input.GetAxis("Mouse X") * sensibilidad;
-        float my = Input.GetAxis("Mouse Y") * sensibilidad;
-        transform.Rotate(0, mx, 0);
-        pitch = Mathf.Clamp(pitch - my, -80f, 80f);
-        camara.localEulerAngles = new Vector3(pitch, 0, 0);
-
-        // Convierte las teclas de movimiento en un vector local relativo al jugador.
-        float h = Input.GetAxisRaw("Horizontal");
-        float v = Input.GetAxisRaw("Vertical");
-        Vector3 mov = (transform.right * h + transform.forward * v).normalized * velocidad;
-
-        // Si esta en el suelo, mantiene una pequena fuerza hacia abajo para estabilidad.
-        if (cc.isGrounded && velY.y < 0) velY.y = -2f;
-        // Acumula gravedad para caidas y saltos futuros si se quisieran agregar.
-        velY.y += gravedad * Time.deltaTime;
-
-        // Aplica el movimiento horizontal y vertical en una sola llamada.
-        cc.Move((mov + velY) * Time.deltaTime);
+        catch (System.Exception ex)
+        {
+            RegistrarError(nameof(Update), ex);
+        }
     }
 }

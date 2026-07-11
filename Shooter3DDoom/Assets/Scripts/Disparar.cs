@@ -88,89 +88,120 @@ public class Disparar : MonoBehaviour
     // Acceso rapido al arma actual.
     DatosArma ArmaActual => armas[indiceArmaActual];
 
+    void RegistrarError(string contexto, System.Exception ex)
+    {
+        Debug.LogError($"[Disparar] Error en {contexto}: {ex.Message}\n{ex}", this);
+    }
+
     void Start()
     {
-        // Prepara audio, municion inicial y HUD al entrar en escena.
-        fuente = GetComponent<AudioSource>();
-        balasActuales = ArmaActual.balasPorCargador;
-        if (muzzle != null) muzzle.SetActive(false);
-        JuegoManager.Instance?.ActualizarArma(NombreArmaActual, ArmaActual.escalaUI, ArmaActual.colorUI);
-        JuegoManager.Instance?.ActualizarMunicion(balasActuales, ArmaActual.balasPorCargador, recargando);
+        try
+        {
+            // Prepara audio, municion inicial y HUD al entrar en escena.
+            fuente = GetComponent<AudioSource>();
+            balasActuales = ArmaActual.balasPorCargador;
+            if (muzzle != null) muzzle.SetActive(false);
+            JuegoManager.Instance?.ActualizarArma(NombreArmaActual, ArmaActual.escalaUI, ArmaActual.colorUI);
+            JuegoManager.Instance?.ActualizarMunicion(balasActuales, ArmaActual.balasPorCargador, recargando);
+        }
+        catch (System.Exception ex)
+        {
+            RegistrarError(nameof(Start), ex);
+        }
     }
 
     void Update()
     {
-        // Si el juego esta pausado o terminado, el jugador no puede disparar ni cambiar arma.
-        if (JuegoManager.Instance != null && !JuegoManager.Instance.PuedeControlarJugador)
+        try
         {
-            return;
-        }
-
-        // Permite cambiar entre dos armas simples para variar dano, cadencia y cargador.
-        if (Input.GetKeyDown(KeyCode.Alpha1))
-        {
-            CambiarArma(0);
-        }
-
-        if (Input.GetKeyDown(KeyCode.Alpha2))
-        {
-            CambiarArma(1);
-        }
-
-        if (Input.GetKeyDown(KeyCode.R) && balasActuales < ArmaActual.balasPorCargador)
-        {
-            IniciarRecarga();
-        }
-
-        // Durante la recarga se bloquea cualquier disparo.
-        if (recargando)
-        {
-            return;
-        }
-
-        if (Input.GetMouseButton(0) && Time.time >= proximo)
-        {
-            if (balasActuales <= 0)
+            // Si el juego esta pausado o terminado, el jugador no puede disparar ni cambiar arma.
+            if (JuegoManager.Instance != null && !JuegoManager.Instance.PuedeControlarJugador)
             {
-                IniciarRecarga();
                 return;
             }
 
-            // La cadencia se controla guardando el proximo instante valido de disparo.
-            proximo = Time.time + ArmaActual.cadencia;
-            balasActuales--;
-            JuegoManager.Instance?.ActualizarMunicion(balasActuales, ArmaActual.balasPorCargador, recargando);
-            JuegoManager.Instance?.AnimarDisparoArma();
-            Disparo();
+            // Permite cambiar entre dos armas simples para variar dano, cadencia y cargador.
+            if (Input.GetKeyDown(KeyCode.Alpha1))
+            {
+                CambiarArma(0);
+            }
 
-            if (balasActuales <= 0)
+            if (Input.GetKeyDown(KeyCode.Alpha2))
+            {
+                CambiarArma(1);
+            }
+
+            if (Input.GetKeyDown(KeyCode.R) && balasActuales < ArmaActual.balasPorCargador)
             {
                 IniciarRecarga();
             }
+
+            // Durante la recarga se bloquea cualquier disparo.
+            if (recargando)
+            {
+                return;
+            }
+
+            if (Input.GetMouseButton(0) && Time.time >= proximo)
+            {
+                if (balasActuales <= 0)
+                {
+                    IniciarRecarga();
+                    return;
+                }
+
+                // La cadencia se controla guardando el proximo instante valido de disparo.
+                proximo = Time.time + ArmaActual.cadencia;
+                balasActuales--;
+                JuegoManager.Instance?.ActualizarMunicion(balasActuales, ArmaActual.balasPorCargador, recargando);
+                JuegoManager.Instance?.AnimarDisparoArma();
+                Disparo();
+
+                if (balasActuales <= 0)
+                {
+                    IniciarRecarga();
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            RegistrarError(nameof(Update), ex);
         }
     }
 
     void Disparo()
     {
-        // Sonido y fogonazo dan feedback inmediato al jugador.
-        if (sonidoDisparo != null) fuente.PlayOneShot(sonidoDisparo);
-
-        if (muzzle != null)
+        try
         {
-            muzzle.SetActive(true);
-            if (muzzleRutina != null)
+            // Sonido y fogonazo dan feedback inmediato al jugador.
+            if (sonidoDisparo != null && fuente != null) fuente.PlayOneShot(sonidoDisparo);
+
+            if (muzzle != null)
             {
-                StopCoroutine(muzzleRutina);
+                muzzle.SetActive(true);
+                if (muzzleRutina != null)
+                {
+                    StopCoroutine(muzzleRutina);
+                }
+                muzzleRutina = StartCoroutine(ApagarMuzzle());
             }
-            muzzleRutina = StartCoroutine(ApagarMuzzle());
-        }
 
-        // El disparo real se resuelve con un raycast desde el centro de la camara.
-        Ray ray = camara.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-        if (Physics.Raycast(ray, out RaycastHit hit, ArmaActual.alcance))
+            // El disparo real se resuelve con un raycast desde el centro de la camara.
+            if (camara == null)
+            {
+                return;
+            }
+
+            Ray ray = camara.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+            if (Physics.Raycast(ray, out RaycastHit hit, ArmaActual.alcance))
+            {
+                Vida v = hit.collider.GetComponentInParent<Vida>();
+                if (v != null) v.RecibirDano(ArmaActual.dano);
+            }
+        }
+        catch (System.Exception ex)
         {
-            Vida v = hit.collider.GetComponentInParent<Vida>();
-            if (v != null) v.RecibirDano(ArmaActual.dano);
+            RegistrarError(nameof(Disparo), ex);
         }
     }
 
@@ -215,15 +246,24 @@ public class Disparar : MonoBehaviour
 
     System.Collections.IEnumerator RecargarRutina()
     {
-        recargando = true;
-        JuegoManager.Instance?.ActualizarMunicion(balasActuales, ArmaActual.balasPorCargador, recargando);
-        JuegoManager.Instance?.AnimarRecargaArma(ArmaActual.tiempoRecarga);
-        // La espera separa la accion de recargar del relleno instantaneo del cargador.
-        yield return new WaitForSeconds(ArmaActual.tiempoRecarga);
-        balasActuales = ArmaActual.balasPorCargador;
-        recargando = false;
-        JuegoManager.Instance?.ActualizarMunicion(balasActuales, ArmaActual.balasPorCargador, recargando);
-        recargaRutina = null;
+        try
+        {
+            recargando = true;
+            JuegoManager.Instance?.ActualizarMunicion(balasActuales, ArmaActual.balasPorCargador, recargando);
+            JuegoManager.Instance?.AnimarRecargaArma(ArmaActual.tiempoRecarga);
+            // La espera separa la accion de recargar del relleno instantaneo del cargador.
+            yield return new WaitForSeconds(ArmaActual.tiempoRecarga);
+            balasActuales = ArmaActual.balasPorCargador;
+            recargando = false;
+            JuegoManager.Instance?.ActualizarMunicion(balasActuales, ArmaActual.balasPorCargador, recargando);
+            recargaRutina = null;
+        }
+        catch (System.Exception ex)
+        {
+            recargando = false;
+            recargaRutina = null;
+            RegistrarError(nameof(RecargarRutina), ex);
+        }
     }
 
     System.Collections.IEnumerator ApagarMuzzle()

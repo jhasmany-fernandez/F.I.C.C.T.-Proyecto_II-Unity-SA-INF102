@@ -5,10 +5,17 @@ public class GoalTrigger : MonoBehaviour
 {
     void OnTriggerEnter(Collider other)
     {
-        // Solo el jugador puede activar la comprobacion de victoria.
-        if (other.CompareTag("Player"))
+        try
         {
-            JuegoManager.Instance?.IntentarCompletarNivel();
+            // Solo el jugador puede activar la comprobacion de victoria.
+            if (other.CompareTag("Player"))
+            {
+                JuegoManager.Instance?.IntentarCompletarNivel();
+            }
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"[GoalTrigger] Error en OnTriggerEnter: {ex.Message}\n{ex}", this);
         }
     }
 }

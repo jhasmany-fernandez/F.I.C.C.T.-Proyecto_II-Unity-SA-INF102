@@ -37,6 +37,10 @@ public class EnemyAI : MonoBehaviour
     private AudioSource fuente;
     // Sonido compartido del disparo.
     private AudioClip sonidoDisparo;
+    // Collider del jugador para apuntar al centro real del cuerpo y validar impactos.
+    private Collider colliderObjetivo;
+    // Punto visual desde el que nace el disparo enemigo.
+    private Transform puntoDisparo;
     // Punto central desde el que patrulla el enemigo.
     private Vector3 origenPatrulla;
     // Proximo instante valido para disparar.
@@ -48,23 +52,42 @@ public class EnemyAI : MonoBehaviour
     // Permite reiniciar el efecto visual del disparo si dispara muy seguido.
     private Coroutine efectoDisparoRutina;
 
+    void RegistrarError(string contexto, System.Exception ex)
+    {
+        Debug.LogError($"[EnemyAI] Error en {contexto}: {ex.Message}\n{ex}", this);
+    }
+
     void Awake()
     {
-        // Cachea componentes para no buscarlos cada frame.
-        agente = GetComponent<NavMeshAgent>();
-        fuente = GetComponent<AudioSource>();
+        try
+        {
+            // Cachea componentes para no buscarlos cada frame.
+            agente = GetComponent<NavMeshAgent>();
+            fuente = GetComponent<AudioSource>();
+        }
+        catch (System.Exception ex)
+        {
+            RegistrarError(nameof(Awake), ex);
+        }
     }
 
     void Start()
     {
-        // Configura la navegacion inicial del enemigo.
-        origenPatrulla = transform.position;
-        agente.speed = velocidad;
-        agente.stoppingDistance = distanciaDetencion;
-        agente.angularSpeed = 360f;
-        agente.acceleration = 12f;
-        agente.updateRotation = false;
-        ElegirPuntoPatrulla();
+        try
+        {
+            // Configura la navegacion inicial del enemigo.
+            origenPatrulla = transform.position;
+            agente.speed = velocidad;
+            agente.stoppingDistance = distanciaDetencion;
+            agente.angularSpeed = 360f;
+            agente.acceleration = 12f;
+            agente.updateRotation = false;
+            ElegirPuntoPatrulla();
+        }
+        catch (System.Exception ex)
+        {
+            RegistrarError(nameof(Start), ex);
+        }
     }
 
     public void Configurar(Transform nuevoObjetivo, Vida nuevaVidaObjetivo, AudioClip clipDisparo)
@@ -73,64 +96,73 @@ public class EnemyAI : MonoBehaviour
         objetivo = nuevoObjetivo;
         vidaObjetivo = nuevaVidaObjetivo;
         sonidoDisparo = clipDisparo;
+        colliderObjetivo = objetivo != null ? objetivo.GetComponent<Collider>() : null;
+        puntoDisparo = transform.Find("PuntoDisparo");
     }
 
     void Update()
     {
-        if (JuegoManager.Instance != null && !JuegoManager.Instance.PuedeActuarIA)
+        try
         {
-            agente.isStopped = true;
-            return;
-        }
+            if (JuegoManager.Instance != null && !JuegoManager.Instance.PuedeActuarIA)
+            {
+                agente.isStopped = true;
+                return;
+            }
 
-        if (objetivo == null || vidaObjetivo == null || vidaObjetivo.EstaMuerto)
-        {
-            return;
-        }
+            if (objetivo == null || vidaObjetivo == null || vidaObjetivo.EstaMuerto)
+            {
+                return;
+            }
 
-        // Decide si debe perseguir porque ya empezo la caceria o porque vio al jugador.
-        bool puedeCazar = JuegoManager.Instance == null || JuegoManager.Instance.EnemigosPuedenCazarJugador;
-        bool puedeVerJugador = PuedeVerJugador();
-        // Primero patrulla; despues de la cuenta regresiva todos los enemigos entran en caceria.
-        if (puedeCazar)
-        {
-            persiguiendo = true;
-        }
-        else if (puedeVerJugador)
-        {
-            persiguiendo = true;
-        }
-        else if (persiguiendo && !TieneLineaDeVision() && Vector3.Distance(transform.position, objetivo.position) > radioVision * 1.35f)
-        {
-            persiguiendo = false;
-            finPausaPatrulla = Time.time + pausaPatrulla;
-        }
+            // Decide si debe perseguir porque ya empezo la caceria o porque vio al jugador.
+            bool puedeCazar = JuegoManager.Instance == null || JuegoManager.Instance.EnemigosPuedenCazarJugador;
+            bool puedeVerJugador = PuedeVerJugador();
+            // Primero patrulla; despues de la cuenta regresiva todos los enemigos entran en caceria.
+            if (puedeCazar)
+            {
+                persiguiendo = true;
+            }
+            else if (puedeVerJugador)
+            {
+                persiguiendo = true;
+            }
+            else if (persiguiendo && !TieneLineaDeVision() && Vector3.Distance(transform.position, objetivo.position) > radioVision * 1.35f)
+            {
+                persiguiendo = false;
+                finPausaPatrulla = Time.time + pausaPatrulla;
+            }
 
-        agente.isStopped = false;
-        // Si esta persiguiendo sigue al jugador; si no, recorre su patrulla local.
-        if (persiguiendo)
-        {
-            agente.SetDestination(objetivo.position);
-        }
-        else
-        {
-            ActualizarPatrulla();
-        }
+            agente.isStopped = false;
+            // Si esta persiguiendo sigue al jugador; si no, recorre su patrulla local.
+            if (persiguiendo)
+            {
+                agente.SetDestination(objetivo.position);
+            }
+            else
+            {
+                ActualizarPatrulla();
+            }
 
-        Vector3 direccion = ObtenerDireccionMirada();
-        if (direccion.sqrMagnitude > 0.01f)
-        {
-            // Suaviza la rotacion para que siempre mire hacia donde se mueve o dispara.
-            Quaternion rotacionObjetivo = Quaternion.LookRotation(direccion.normalized);
-            transform.rotation = Quaternion.Slerp(transform.rotation, rotacionObjetivo, Time.deltaTime * 8f);
-        }
+            Vector3 direccion = ObtenerDireccionMirada();
+            if (direccion.sqrMagnitude > 0.01f)
+            {
+                // Suaviza la rotacion para que siempre mire hacia donde se mueve o dispara.
+                Quaternion rotacionObjetivo = Quaternion.LookRotation(direccion.normalized);
+                transform.rotation = Quaternion.Slerp(transform.rotation, rotacionObjetivo, Time.deltaTime * 8f);
+            }
 
-        // Solo dispara cuando esta cerca, tiene cadencia disponible y linea de vision.
-        float distancia = Vector3.Distance(transform.position, objetivo.position);
-        if (persiguiendo && distancia <= rangoAtaque && Time.time >= proximoDisparo && TieneLineaDeVision())
+            // Solo dispara cuando esta cerca, tiene cadencia disponible y linea de vision.
+            float distancia = Vector3.Distance(transform.position, objetivo.position);
+            if (persiguiendo && distancia <= rangoAtaque && Time.time >= proximoDisparo && TieneLineaDeVision())
+            {
+                proximoDisparo = Time.time + cadencia;
+                Disparar();
+            }
+        }
+        catch (System.Exception ex)
         {
-            proximoDisparo = Time.time + cadencia;
-            Disparar();
+            RegistrarError(nameof(Update), ex);
         }
     }
 
@@ -184,17 +216,8 @@ public class EnemyAI : MonoBehaviour
 
     bool TieneLineaDeVision()
     {
-        Vector3 origen = transform.position + Vector3.up * 1.2f;
-        Vector3 destino = objetivo.position + Vector3.up * 0.6f;
-        Vector3 direccion = destino - origen;
-
-        // El raycast evita que el enemigo dispare a traves de paredes.
-        if (Physics.Raycast(origen, direccion.normalized, out RaycastHit hit, rangoAtaque + 1f))
-        {
-            return hit.collider.GetComponentInParent<Vida>() == vidaObjetivo;
-        }
-
-        return false;
+        // Solo hay vision si el primer collider solido en la linea recta pertenece al jugador.
+        return TryGetPrimerImpactoVisible(out RaycastHit hit) && hit.collider.GetComponentInParent<Vida>() == vidaObjetivo;
     }
 
     void ActualizarPatrulla()
@@ -233,48 +256,100 @@ public class EnemyAI : MonoBehaviour
 
     void Disparar()
     {
-        // Reproduce el sonido si el enemigo tiene clip configurado.
-        if (sonidoDisparo != null)
+        try
         {
-            fuente.PlayOneShot(sonidoDisparo);
+            // Reproduce el sonido si el enemigo tiene clip configurado.
+            if (sonidoDisparo != null && fuente != null)
+            {
+                fuente.PlayOneShot(sonidoDisparo);
+            }
+
+            // El ataque usa la misma validacion de linea de vision para no atravesar paredes.
+            if (TryGetPrimerImpactoVisible(out RaycastHit hit))
+            {
+                // Reinicia el efecto visual si habia uno anterior activo.
+                if (efectoDisparoRutina != null)
+                {
+                    StopCoroutine(efectoDisparoRutina);
+                }
+                efectoDisparoRutina = StartCoroutine(MostrarLineaDisparo(ObtenerOrigenDisparo(), hit.point));
+
+                Vida vidaImpactada = hit.collider.GetComponentInParent<Vida>();
+                if (vidaImpactada == vidaObjetivo)
+                {
+                    // Solo aplica dano si realmente impacto al jugador.
+                    vidaObjetivo.RecibirDano(dano);
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            RegistrarError(nameof(Disparar), ex);
+        }
+    }
+
+    bool TryGetPrimerImpactoVisible(out RaycastHit hit)
+    {
+        Vector3 origen = ObtenerOrigenDisparo();
+        Vector3 destino = ObtenerPuntoObjetivo();
+        Vector3 direccion = destino - origen;
+        float distanciaObjetivo = direccion.magnitude;
+
+        // Si el objetivo esta demasiado cerca, no hace falta raycast.
+        if (distanciaObjetivo <= 0.01f)
+        {
+            hit = default;
+            return false;
         }
 
-        // El ataque usa raycast para comportarse de forma parecida al disparo del jugador.
-        Vector3 origen = transform.position + Vector3.up * 1.2f;
-        Vector3 destino = objetivo.position + Vector3.up * 0.6f;
-        Vector3 direccion = (destino - origen).normalized;
+        // Usa la distancia exacta al jugador e ignora triggers para que una pared siempre bloquee el disparo.
+        return Physics.Raycast(
+            origen,
+            direccion.normalized,
+            out hit,
+            distanciaObjetivo,
+            Physics.DefaultRaycastLayers,
+            QueryTriggerInteraction.Ignore);
+    }
 
-        if (Physics.Raycast(origen, direccion, out RaycastHit hit, rangoAtaque + 1f))
+    Vector3 ObtenerOrigenDisparo()
+    {
+        // Si existe el punto del arma, el disparo nace exactamente desde ahi.
+        if (puntoDisparo != null)
         {
-            // Reinicia el efecto visual si habia uno anterior activo.
-            if (efectoDisparoRutina != null)
-            {
-                StopCoroutine(efectoDisparoRutina);
-            }
-            efectoDisparoRutina = StartCoroutine(MostrarLineaDisparo(origen, hit.point));
-
-            Vida vidaImpactada = hit.collider.GetComponentInParent<Vida>();
-            if (vidaImpactada == vidaObjetivo)
-            {
-                // Solo aplica dano si realmente impacto al jugador.
-                vidaObjetivo.RecibirDano(dano);
-            }
+            return puntoDisparo.position;
         }
+
+        // Fallback por si el punto visual no se creo correctamente.
+        return transform.position + Vector3.up * 1.05f + transform.forward * 0.3f;
+    }
+
+    Vector3 ObtenerPuntoObjetivo()
+    {
+        // Si el jugador tiene collider, apunta al centro del cuerpo para una linea de tiro mas fiable.
+        if (colliderObjetivo != null)
+        {
+            return colliderObjetivo.bounds.center;
+        }
+
+        return objetivo.position + Vector3.up * 0.6f;
     }
 
     System.Collections.IEnumerator MostrarLineaDisparo(Vector3 origen, Vector3 destino)
     {
-        // Traza visual corta para que el disparo enemigo sea visible en pantalla.
+        // Traza visual corta y brillante para que el disparo enemigo parezca un rayo.
         GameObject linea = new GameObject("DisparoEnemigo");
         LineRenderer lineRenderer = linea.AddComponent<LineRenderer>();
         lineRenderer.positionCount = 2;
         lineRenderer.SetPosition(0, origen);
         lineRenderer.SetPosition(1, destino);
-        lineRenderer.startWidth = 0.06f;
-        lineRenderer.endWidth = 0.02f;
+        lineRenderer.startWidth = 0.12f;
+        lineRenderer.endWidth = 0.04f;
         lineRenderer.useWorldSpace = true;
         lineRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         lineRenderer.receiveShadows = false;
+        lineRenderer.numCapVertices = 6;
+        lineRenderer.alignment = LineAlignment.View;
 
         Shader shader = Shader.Find("Sprites/Default");
         if (shader == null)
@@ -283,12 +358,12 @@ public class EnemyAI : MonoBehaviour
         }
 
         Material material = new Material(shader);
-        material.color = new Color(1f, 0.3f, 0.2f, 0.95f);
+        material.color = new Color(1f, 0.2f, 0.1f, 1f);
         lineRenderer.material = material;
         lineRenderer.startColor = material.color;
-        lineRenderer.endColor = new Color(1f, 0.9f, 0.2f, 0.2f);
+        lineRenderer.endColor = new Color(1f, 0.95f, 0.35f, 0.5f);
 
-        yield return new WaitForSeconds(0.06f);
+        yield return new WaitForSeconds(0.09f);
 
         Destroy(linea);
         efectoDisparoRutina = null;

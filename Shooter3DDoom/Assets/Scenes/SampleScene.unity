@@ -2204,7 +2204,7 @@ Transform:
   m_GameObject: {fileID: 751558488}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 13.4, y: 1, z: -10.6}
+  m_LocalPosition: {x: 13.65, y: 1, z: -10.8}
   m_LocalScale: {x: 10, y: 3, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2427,9 +2427,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Disparar
   camara: {fileID: 330585545}
-  dano: 2
-  alcance: 100
-  cadencia: 0.5
   sonidoDisparo: {fileID: 8300000, guid: 6d11c515ec3e443729434f9b4ad0acfd, type: 3}
   muzzle: {fileID: 898153585}
 --- !u!82 &785518864
@@ -3096,7 +3093,7 @@ Transform:
   m_GameObject: {fileID: 1092313688}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 24.43, y: 1, z: 0.34}
+  m_LocalPosition: {x: 24.43, y: 1, z: 0.2}
   m_LocalScale: {x: 10, y: 3, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3432,7 +3429,7 @@ Transform:
   m_GameObject: {fileID: 1202003809}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 24.43, y: 1, z: 10.41}
+  m_LocalPosition: {x: 24.43, y: 1, z: 10.16}
   m_LocalScale: {x: 10, y: 3, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4664,7 +4661,7 @@ Transform:
   m_GameObject: {fileID: 1508454450}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: -9.3, y: 1, z: -10.6}
+  m_LocalPosition: {x: -9.3, y: 1, z: -11.1}
   m_LocalScale: {x: 10, y: 3, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

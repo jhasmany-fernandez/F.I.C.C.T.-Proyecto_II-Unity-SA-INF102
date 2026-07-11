@@ -22,6 +22,11 @@ public class Vida : MonoBehaviour
     // Evento opcional para notificar cuando el objeto muere.
     public System.Action<Vida> alMorir;
 
+    void RegistrarError(string contexto, System.Exception ex)
+    {
+        Debug.LogError($"[Vida] Error en {contexto}: {ex.Message}\n{ex}", this);
+    }
+
     // Propiedad de solo lectura para consultar la vida actual.
     public int VidaActual => vidaActual;
 
@@ -33,45 +38,59 @@ public class Vida : MonoBehaviour
 
     void Awake()
     {
-        // Inicializa la vida actual con el maximo definido.
-        vidaActual = vidaMax;
-        // Intenta cachear un renderer hijo para efectos visuales de impacto.
-        cachedRenderer = GetComponentInChildren<Renderer>();
-        if (cachedRenderer != null && cachedRenderer.material.HasProperty("_BaseColor"))
+        try
         {
-            colorOriginal = cachedRenderer.material.GetColor("_BaseColor");
+            // Inicializa la vida actual con el maximo definido.
+            vidaActual = vidaMax;
+            // Intenta cachear un renderer hijo para efectos visuales de impacto.
+            cachedRenderer = GetComponentInChildren<Renderer>();
+            if (cachedRenderer != null && cachedRenderer.material.HasProperty("_BaseColor"))
+            {
+                colorOriginal = cachedRenderer.material.GetColor("_BaseColor");
+            }
+            else if (cachedRenderer != null)
+            {
+                colorOriginal = cachedRenderer.material.color;
+            }
         }
-        else if (cachedRenderer != null)
+        catch (System.Exception ex)
         {
-            colorOriginal = cachedRenderer.material.color;
+            RegistrarError(nameof(Awake), ex);
         }
     }
 
     public void RecibirDano(int cantidad)
     {
-        // Ignora dano invalido o repetido despues de morir.
-        if (estaMuerto || cantidad <= 0)
+        try
         {
-            return;
-        }
+            // Ignora dano invalido o repetido despues de morir.
+            if (estaMuerto || cantidad <= 0)
+            {
+                return;
+            }
 
-        // Nunca deja la vida por debajo de cero.
-        vidaActual = Mathf.Max(vidaActual - cantidad, 0);
+            // Nunca deja la vida por debajo de cero.
+            vidaActual = Mathf.Max(vidaActual - cantidad, 0);
 
-        // El jugador actualiza HUD y flash rojo; los enemigos muestran impacto local.
-        if (esJugador)
-        {
-            JuegoManager.Instance?.ActualizarVida(vidaActual, vidaMax);
-            JuegoManager.Instance?.MostrarFlashDano();
-        }
-        else
-        {
-            MostrarImpacto();
-        }
+            // El jugador actualiza HUD y flash rojo; los enemigos muestran impacto local.
+            if (esJugador)
+            {
+                JuegoManager.Instance?.ActualizarVida(vidaActual, vidaMax);
+                JuegoManager.Instance?.MostrarFlashDano();
+            }
+            else
+            {
+                MostrarImpacto();
+            }
 
-        if (vidaActual <= 0)
+            if (vidaActual <= 0)
+            {
+                Morir();
+            }
+        }
+        catch (System.Exception ex)
         {
-            Morir();
+            RegistrarError(nameof(RecibirDano), ex);
         }
     }
 
