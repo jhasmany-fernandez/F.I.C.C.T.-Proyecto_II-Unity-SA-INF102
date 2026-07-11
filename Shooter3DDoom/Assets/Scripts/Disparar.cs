@@ -246,13 +246,15 @@ public class Disparar : MonoBehaviour
 
     System.Collections.IEnumerator RecargarRutina()
     {
+        recargando = true;
+        JuegoManager.Instance?.ActualizarMunicion(balasActuales, ArmaActual.balasPorCargador, recargando);
+        JuegoManager.Instance?.AnimarRecargaArma(ArmaActual.tiempoRecarga);
+
+        // La espera separa la accion de recargar del relleno instantaneo del cargador.
+        yield return new WaitForSeconds(ArmaActual.tiempoRecarga);
+
         try
         {
-            recargando = true;
-            JuegoManager.Instance?.ActualizarMunicion(balasActuales, ArmaActual.balasPorCargador, recargando);
-            JuegoManager.Instance?.AnimarRecargaArma(ArmaActual.tiempoRecarga);
-            // La espera separa la accion de recargar del relleno instantaneo del cargador.
-            yield return new WaitForSeconds(ArmaActual.tiempoRecarga);
             balasActuales = ArmaActual.balasPorCargador;
             recargando = false;
             JuegoManager.Instance?.ActualizarMunicion(balasActuales, ArmaActual.balasPorCargador, recargando);

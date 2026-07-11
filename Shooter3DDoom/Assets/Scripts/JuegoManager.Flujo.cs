@@ -101,6 +101,12 @@ public partial class JuegoManager
         MostrarPanel("Deseas salir del juego?", "Salir");
         MostrarEstado("Pulsa Esc para continuar", 0f);
 
+        if (botonReintentar == null)
+        {
+            Debug.LogWarning("[JuegoManager] No se pudo mostrar la confirmacion de salida porque el boton principal del panel es nulo.", this);
+            return;
+        }
+
         botonReintentar.onClick.RemoveAllListeners();
         botonReintentar.onClick.AddListener(SalirDelJuego);
 
@@ -145,8 +151,11 @@ public partial class JuegoManager
 
         MostrarEstado("Elimina a todos y llega a la meta", 0f);
 
-        botonReintentar.onClick.RemoveAllListeners();
-        botonReintentar.onClick.AddListener(ReintentarNivel);
+        if (botonReintentar != null)
+        {
+            botonReintentar.onClick.RemoveAllListeners();
+            botonReintentar.onClick.AddListener(ReintentarNivel);
+        }
     }
 
     void MostrarPausa()
@@ -159,6 +168,12 @@ public partial class JuegoManager
         CambiarCursor(true);
         MostrarPanel("Juego en pausa", "Continuar");
         MostrarEstado("Presiona Esc para reanudar", 0f);
+
+        if (botonReintentar == null)
+        {
+            Debug.LogWarning("[JuegoManager] No se pudo mostrar la pausa porque el boton principal del panel es nulo.", this);
+            return;
+        }
 
         botonReintentar.onClick.RemoveAllListeners();
         botonReintentar.onClick.AddListener(ReanudarJuego);

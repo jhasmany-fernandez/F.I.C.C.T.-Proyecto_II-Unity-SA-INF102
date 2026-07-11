@@ -6,7 +6,7 @@ using UnityEngine.AI;
 [RequireComponent(typeof(Vida))]
 [RequireComponent(typeof(AudioSource))]
 // Implementa la IA basica del enemigo: patrulla, deteccion, persecucion y disparo.
-public class EnemyAI : MonoBehaviour
+public class EnemigoIA : MonoBehaviour
 {
     // Velocidad base de desplazamiento.
     public float velocidad = 3.5f;
@@ -54,7 +54,7 @@ public class EnemyAI : MonoBehaviour
 
     void RegistrarError(string contexto, System.Exception ex)
     {
-        Debug.LogError($"[EnemyAI] Error en {contexto}: {ex.Message}\n{ex}", this);
+        Debug.LogError($"[EnemigoIA] Error en {contexto}: {ex.Message}\n{ex}", this);
     }
 
     void Awake()

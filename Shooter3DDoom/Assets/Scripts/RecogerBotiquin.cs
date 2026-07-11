@@ -1,13 +1,13 @@
 using UnityEngine;
 
 // Maneja el comportamiento de recoger un botiquin, curar y reproducir sonido.
-public class MedkitPickup : MonoBehaviour
+public class RecogerBotiquin : MonoBehaviour
 {
     // Cantidad de vida que devuelve cada botiquin.
     public int curacion = 1;
 
     // Se comparte entre todos los botiquines para no recrear el audio cada vez.
-    private static AudioClip clipPickup;
+    private static AudioClip clipRecoger;
     // Desfase aleatorio para que cada botiquin flote distinto.
     private float tiempoBase;
     // Posicion base usada para el efecto de flotacion.
@@ -15,7 +15,7 @@ public class MedkitPickup : MonoBehaviour
 
     void RegistrarError(string contexto, System.Exception ex)
     {
-        Debug.LogError($"[MedkitPickup] Error en {contexto}: {ex.Message}\n{ex}", this);
+        Debug.LogError($"[RecogerBotiquin] Error en {contexto}: {ex.Message}\n{ex}", this);
     }
 
     void Awake()
@@ -23,9 +23,9 @@ public class MedkitPickup : MonoBehaviour
         try
         {
             // Crea una sola vez el sonido sintetico del pickup.
-            if (clipPickup == null)
+            if (clipRecoger == null)
             {
-                clipPickup = CrearSonidoPickup();
+                clipRecoger = CrearSonidoRecoger();
             }
 
             // Guarda una fase distinta para evitar animaciones sincronizadas.
@@ -93,9 +93,9 @@ public class MedkitPickup : MonoBehaviour
             }
 
             // Reproduce el sonido en la posicion del pickup antes de destruirlo.
-            if (clipPickup != null)
+            if (clipRecoger != null)
             {
-                AudioSource.PlayClipAtPoint(clipPickup, transform.position, 0.75f);
+                AudioSource.PlayClipAtPoint(clipRecoger, transform.position, 0.75f);
             }
 
             JuegoManager.Instance?.MostrarEstado($"+{recuperado} vida", 1.2f);
@@ -107,7 +107,7 @@ public class MedkitPickup : MonoBehaviour
         }
     }
 
-    static AudioClip CrearSonidoPickup()
+    static AudioClip CrearSonidoRecoger()
     {
         // Genera un sonido corto por codigo para no depender de un archivo externo.
         const int sampleRate = 44100;
@@ -126,7 +126,7 @@ public class MedkitPickup : MonoBehaviour
         }
 
         // Crea el AudioClip final y copia los samples sintetizados.
-        AudioClip clip = AudioClip.Create("PickupMedkit", samples, 1, sampleRate, false);
+        AudioClip clip = AudioClip.Create("RecogerBotiquin", samples, 1, sampleRate, false);
         clip.SetData(data, 0);
         return clip;
     }

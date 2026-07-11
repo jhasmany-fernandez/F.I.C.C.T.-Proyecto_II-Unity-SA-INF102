@@ -1,7 +1,7 @@
 using UnityEngine;
 
 // Se coloca sobre la meta para detectar cuando el jugador intenta completar el nivel.
-public class GoalTrigger : MonoBehaviour
+public class ActivadorMeta : MonoBehaviour
 {
     void OnTriggerEnter(Collider other)
     {
@@ -15,7 +15,7 @@ public class GoalTrigger : MonoBehaviour
         }
         catch (System.Exception ex)
         {
-            Debug.LogError($"[GoalTrigger] Error en OnTriggerEnter: {ex.Message}\n{ex}", this);
+            Debug.LogError($"[ActivadorMeta] Error en OnTriggerEnter: {ex.Message}\n{ex}", this);
         }
     }
 }

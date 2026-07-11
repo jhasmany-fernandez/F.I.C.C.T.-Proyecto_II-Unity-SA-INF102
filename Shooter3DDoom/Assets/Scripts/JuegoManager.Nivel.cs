@@ -51,7 +51,7 @@ public partial class JuegoManager
                 Destroy(metaActual);
             }
 
-            foreach (EnemyAI enemigo in enemigos)
+        foreach (EnemigoIA enemigo in enemigos)
             {
                 if (enemigo != null)
                 {
@@ -334,7 +334,7 @@ public partial class JuegoManager
         rb.isKinematic = true;
         rb.useGravity = false;
 
-        GoalTrigger trigger = meta.AddComponent<GoalTrigger>();
+        ActivadorMeta trigger = meta.AddComponent<ActivadorMeta>();
         _ = trigger;
 
         AplicarColor(meta.GetComponent<Renderer>(), new Color(0.95f, 0.85f, 0.1f, 1f));
@@ -396,7 +396,7 @@ public partial class JuegoManager
         vida.vidaMax = 2;
         vida.alMorir += OnEnemyDeath;
 
-        EnemyAI ia = enemigo.AddComponent<EnemyAI>();
+        EnemigoIA ia = enemigo.AddComponent<EnemigoIA>();
         ia.Configurar(jugador, vidaJugador, clipDisparoJugador);
 
         enemigos.Add(ia);
@@ -465,7 +465,7 @@ public partial class JuegoManager
             rb.useGravity = false;
 
             botiquines.Add(botiquin);
-            botiquin.AddComponent<MedkitPickup>();
+            botiquin.AddComponent<RecogerBotiquin>();
         }
         catch (System.Exception ex)
         {
@@ -495,7 +495,7 @@ public partial class JuegoManager
     void OnEnemyDeath(Vida vida)
     {
         // Al morir un enemigo, se actualiza la lista, HUD y posibles recompensas.
-        EnemyAI enemigo = vida.GetComponent<EnemyAI>();
+        EnemigoIA enemigo = vida.GetComponent<EnemigoIA>();
         if (enemigo != null)
         {
             enemigos.Remove(enemigo);

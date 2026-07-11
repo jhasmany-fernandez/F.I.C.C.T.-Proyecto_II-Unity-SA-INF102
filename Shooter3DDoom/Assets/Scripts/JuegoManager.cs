@@ -28,7 +28,7 @@ public partial class JuegoManager : MonoBehaviour
     public static JuegoManager Instance { get; private set; }
 
     // Lista viva de enemigos actuales del nivel.
-    private readonly List<EnemyAI> enemigos = new();
+    private readonly List<EnemigoIA> enemigos = new();
     // Lista viva de botiquines actuales del nivel.
     private readonly List<GameObject> botiquines = new();
     // Configuracion basica de los tres niveles del juego.
@@ -151,10 +151,10 @@ public partial class JuegoManager : MonoBehaviour
 
     IEnumerator ConfigurarEscena()
     {
+        yield return null;
+
         try
         {
-            yield return null;
-
             // Reinicia el estado del juego y vuelve a enlazar referencias de la escena.
             estado = EstadoJuego.Jugando;
             enemigos.Clear();
