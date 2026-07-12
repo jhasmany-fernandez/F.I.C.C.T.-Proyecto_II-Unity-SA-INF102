@@ -420,41 +420,22 @@ public partial class JuegoManager
                 return;
             }
 
-            GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            GameObject visual = new GameObject("Visual");
             visual.transform.SetParent(botiquin.transform, false);
-            visual.name = "Visual";
             visual.transform.localPosition = new Vector3(0f, 0.45f, 0f);
             visual.transform.localRotation = Quaternion.identity;
-            visual.transform.localScale = new Vector3(0.9f, 0.9f, 0.9f);
+            visual.transform.localScale = Vector3.one;
 
-            Collider visualCollider = visual.GetComponent<Collider>();
-            if (visualCollider != null)
-            {
-                Destroy(visualCollider);
-            }
-
-            Renderer rendererVisual = visual.GetComponent<Renderer>();
-            Shader shader = Shader.Find("Unlit/Transparent");
-            if (shader == null)
-            {
-                shader = Shader.Find("Sprites/Default");
-            }
-            if (shader == null)
-            {
-                shader = Shader.Find("Universal Render Pipeline/Unlit");
-            }
-
-            Material material = new Material(shader);
-            material.mainTexture = texturaBotiquin;
-            if (material.HasProperty("_BaseMap"))
-            {
-                material.SetTexture("_BaseMap", texturaBotiquin);
-            }
-            if (material.HasProperty("_BaseColor"))
-            {
-                material.SetColor("_BaseColor", Color.white);
-            }
-            rendererVisual.material = material;
+            // Convierte la textura en un Sprite en tiempo de ejecucion para usar un SpriteRenderer real.
+            SpriteRenderer spriteRenderer = visual.AddComponent<SpriteRenderer>();
+            Sprite spriteBotiquin = Sprite.Create(
+                texturaBotiquin,
+                new Rect(0f, 0f, texturaBotiquin.width, texturaBotiquin.height),
+                new Vector2(0.5f, 0.5f),
+                100f);
+            spriteRenderer.sprite = spriteBotiquin;
+            spriteRenderer.color = Color.white;
+            spriteRenderer.sortingOrder = 5;
 
             SphereCollider collider = botiquin.AddComponent<SphereCollider>();
             collider.isTrigger = true;
@@ -502,10 +483,22 @@ public partial class JuegoManager
         }
 
         // Cada dos bajas, el jugador recibe una pequena recompensa de vida.
+        // Lleva la cuenta total de enemigos eliminados desde que empezo el nivel actual.
         enemigosEliminadosAcumulados++;
+
+        // La recompensa se activa solo cuando:
+        // 1. existe el jugador,
+        // 2. el jugador sigue vivo,
+        // 3. y la cantidad de enemigos eliminados es multiplo de 2.
+        // El operador % 2 == 0 significa "cada dos enemigos".
         if (vidaJugador != null && !vidaJugador.EstaMuerto && enemigosEliminadosAcumulados % 2 == 0)
         {
+            // Intenta curar exactamente 1 punto de vida.
+            // El metodo Curar ya respeta el limite maximo de vida del jugador.
             int curado = vidaJugador.Curar(1);
+
+            // Solo muestra el mensaje y el efecto visual si realmente recupero vida.
+            // Si el jugador ya estaba al maximo, Curar devuelve 0 y no se muestra recompensa falsa.
             if (curado > 0)
             {
                 MostrarEstado($"+{curado} vida por eliminar 2 enemigos", 1.5f);

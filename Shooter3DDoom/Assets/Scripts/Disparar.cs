@@ -131,6 +131,7 @@ public class Disparar : MonoBehaviour
                 CambiarArma(1);
             }
 
+            // Permite recargar manualmente con la tecla R cuando el cargador no esta lleno.
             if (Input.GetKeyDown(KeyCode.R) && balasActuales < ArmaActual.balasPorCargador)
             {
                 IniciarRecarga();

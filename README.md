@@ -1,5 +1,10 @@
 # F.I.C.C.T. Proyecto II Unity SA-INF102
 
+## Entrega
+
+- Informe: [OneDrive](https://1drv.ms/w/c/e18ab7acee2f0bb4/IQCZQeeDM9qcRrfy_GO4UwluAZkeKsUUsL6JR-cRwK6ZgAA?e=WIqzYj)
+- Video: [OneDrive](https://1drv.ms/v/c/e18ab7acee2f0bb4/IQBL7zmRF0YKS5OmDF9E_Y7KAagpwkPrrbBxJ9xNRUTwh6k?e=vniAsp)
+
 Proyecto practico basado en un `Shooter 3D estilo Doom` desarrollado en Unity. El juego fue ampliado para incluir sistemas de municion, recarga, enemigos con navegacion `NavMesh`, meta con condicion doble de victoria, interfaz de estado, retroalimentacion de dano y botiquines funcionales.
 
 ## Descripcion
@@ -48,13 +53,13 @@ El jugador recorre un mapa tipo laberinto en primera persona y debe eliminar a t
   controla niveles, interfaz, meta, enemigos, botiquines, pausa, derrota y victoria.
 - [`Assets/Scripts/Disparar.cs`](/home/jhasmany/Repository/Programacion%20Grafica/F.I.C.C.T.-Proyecto_II-Unity-SA-INF102/Shooter3DDoom/Assets/Scripts/Disparar.cs:1)
   maneja disparo, armas, recarga y municion.
-- [`Assets/Scripts/EnemyAI.cs`](/home/jhasmany/Repository/Programacion%20Grafica/F.I.C.C.T.-Proyecto_II-Unity-SA-INF102/Shooter3DDoom/Assets/Scripts/EnemyAI.cs:1)
+- [`Assets/Scripts/EnemigoIA.cs`](/home/jhasmany/Repository/Programacion%20Grafica/F.I.C.C.T.-Proyecto_II-Unity-SA-INF102/Shooter3DDoom/Assets/Scripts/EnemigoIA.cs:1)
   implementa patrulla, persecucion, vision y disparo enemigo.
 - [`Assets/Scripts/Vida.cs`](/home/jhasmany/Repository/Programacion%20Grafica/F.I.C.C.T.-Proyecto_II-Unity-SA-INF102/Shooter3DDoom/Assets/Scripts/Vida.cs:1)
   administra vida, dano, curacion y muerte.
-- [`Assets/Scripts/MedkitPickup.cs`](/home/jhasmany/Repository/Programacion%20Grafica/F.I.C.C.T.-Proyecto_II-Unity-SA-INF102/Shooter3DDoom/Assets/Scripts/MedkitPickup.cs:1)
+- [`Assets/Scripts/RecogerBotiquin.cs`](/home/jhasmany/Repository/Programacion%20Grafica/F.I.C.C.T.-Proyecto_II-Unity-SA-INF102/Shooter3DDoom/Assets/Scripts/RecogerBotiquin.cs:1)
   controla el comportamiento del botiquin.
-- [`Assets/Scripts/GoalTrigger.cs`](/home/jhasmany/Repository/Programacion%20Grafica/F.I.C.C.T.-Proyecto_II-Unity-SA-INF102/Shooter3DDoom/Assets/Scripts/GoalTrigger.cs:1)
+- [`Assets/Scripts/ActivadorMeta.cs`](/home/jhasmany/Repository/Programacion%20Grafica/F.I.C.C.T.-Proyecto_II-Unity-SA-INF102/Shooter3DDoom/Assets/Scripts/ActivadorMeta.cs:1)
   detecta cuando el jugador entra a la meta.
 
 ## Assets relevantes
